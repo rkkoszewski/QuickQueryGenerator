@@ -1,6 +1,8 @@
 package com.robertkoszewski.quickquery.builder;
 
-import com.robertkoszewski.quickquery.model.*;
+import com.robertkoszewski.quickquery.model.Order;
+import com.robertkoszewski.quickquery.model.OrderByClause;
+import com.robertkoszewski.quickquery.model.QueryElement;
 import com.robertkoszewski.quickquery.statement.OrderBy;
 
 /**
@@ -9,18 +11,25 @@ import com.robertkoszewski.quickquery.statement.OrderBy;
  */
 public class OrderByState extends BuilderHost implements OrderBy{
 
-	OrderByState(SQLBuilder builder) {
-		super(builder);
+	OrderByState(BuilderContainer builder, QueryElement model) {
+		super(builder, model);
 	}
 	
-	static OrderByState orderByFactory(SQLBuilder builder, String column_name, Order order){
-		builder.getModel().addOrderByStatement(column_name, order);
-		return new OrderByState(builder);
+	static OrderByState orderByFactory(BuilderContainer builder, QueryElement model, String column_name, Order order){
+		OrderByClause orderby;
+		if(model instanceof OrderByClause){
+			orderby = (OrderByClause) model;
+		}else{
+			orderby = new OrderByClause();
+			model.addNextElement(orderby);
+		}
+		orderby.addOrderBy(column_name, order);
+		return new OrderByState(builder, orderby);
 	}
 
 	// ORDER BY
 	public OrderByState orderby(String column_name){
-		return OrderByState.orderByFactory(builder, column_name, null);
+		return OrderByState.orderByFactory(builder, model, column_name, null);
 	}
 	
 	public OrderByState ORDERBY(String column_name){
@@ -28,7 +37,7 @@ public class OrderByState extends BuilderHost implements OrderBy{
 	}
 	
 	public OrderByState orderby(String column_name, Order order){
-		return OrderByState.orderByFactory(builder, column_name, order);
+		return OrderByState.orderByFactory(builder, model, column_name, order);
 	}
 	
 	public OrderByState ORDERBY(String column_name, Order order){

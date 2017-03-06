@@ -1,6 +1,6 @@
 package com.robertkoszewski.quickquery.builder;
 
-import com.robertkoszewski.quickquery.model.SQLBuilder;
+import com.robertkoszewski.quickquery.model.QueryElement;
 
 /**
  * Builder Host
@@ -8,10 +8,12 @@ import com.robertkoszewski.quickquery.model.SQLBuilder;
  */
 public class BuilderHost {
 
-	SQLBuilder builder;
+	BuilderContainer builder;
+	QueryElement model;
 	
-	BuilderHost(SQLBuilder builder) {
+	BuilderHost(BuilderContainer builder, QueryElement model) {
 		this.builder = builder;
+		this.model = model;
 	}
 	
 	public String toString(){

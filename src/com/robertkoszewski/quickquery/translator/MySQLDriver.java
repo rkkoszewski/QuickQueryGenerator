@@ -12,13 +12,25 @@ import com.robertkoszewski.quickquery.model.ComparableStatement.dataType;
 public class MySQLDriver implements ModelDriver{
 
 	@Override
-	public String toString(SQLModel model) {
+	public String toString(QueryElement model) {
+		if(model instanceof SelectClause)
+			try {
+				return processSelect((SelectClause) model);
+			} catch (Exception e) {
+				//e.printStackTrace();
+				return "ERROR: "+e.getMessage();
+			}
+		else
+			return "ERROR: Unsupported Statement (Only SELECT is supported so far)";
+	}
+	
+	// ##############################################################
+	// SELECT Statement
+	// ##############################################################
+	private String processSelect(SelectClause model) throws Exception{
 		String query = "SELECT ";
-		
-		// ##############################################################
-		// SELECT Statement
-		// ##############################################################
-		ArrayList<ItemAlias> select_column = model.getSelectColumn();
+
+		ArrayList<ItemAlias> select_column = model.getColumns();
 		
 		if(select_column.size() == 0){
 			query += "* ";
@@ -44,9 +56,20 @@ public class MySQLDriver implements ModelDriver{
 			query += ") ";
 		}
 		
-		// ##############################################################
-		// FROM Statement
-		// ##############################################################
+		// Process Next
+		QueryElement next = model.getNextElement();
+		
+		if(next instanceof FromClause)
+			return query + processFrom((FromClause) next);
+		else
+			throw new Exception("Error: Wrong state. After SELECT only FROM is supported but is "+next.getClass().getName());
+	}
+	
+	// ##############################################################
+	// FROM Statement
+	// ##############################################################
+	private String processFrom(FromClause model) throws Exception{
+		String query = "";
 		ArrayList<ItemAlias> from = model.getTables();
 		
 		query += "FROM ";
@@ -64,10 +87,29 @@ public class MySQLDriver implements ModelDriver{
 				query += ", ";
 		}
 		
-		// ##############################################################
-		// WHERE Statement
-		// ##############################################################
-		ArrayList<ComparableStatementCollection> where_collection = model.getWhereStatement();
+		// Process Next
+		QueryElement next = model.getNextElement();
+		
+		if(next instanceof WhereClause)
+			return query + processWhere((WhereClause) next);
+		if(next instanceof OrderByClause)
+			return query + processOrderBy((OrderByClause) next);
+		if(next instanceof GroupByClause)
+			return query + processGroupBy((GroupByClause) next);
+		if(next instanceof HavingClause)
+			return query + processHaving((HavingClause) next);
+		if(model.getNextElement() != null)
+			throw new Exception("ERROR: Unknown state after From");
+
+		return query + ";";
+	}
+	
+	// ##############################################################
+	// WHERE Statement
+	// ##############################################################
+	private String processWhere(WhereClause model) throws Exception{
+		String query = "";
+		ArrayList<ComparableStatementCollection> where_collection = model.getFilter();
 		
 		if(where_collection.size() > 0){
 			query += " WHERE ";
@@ -100,45 +142,28 @@ public class MySQLDriver implements ModelDriver{
 					query +=  " OR ";
 			}
 		}
-		
-		// ##############################################################
-		// GROUP BY Statement
-		// ##############################################################
-		Iterator<String> gbit = model.getGroupByColumns().iterator();
-		if(gbit.hasNext())
-			query += " GROUP BY ";
-		
-		while(gbit.hasNext()){
-			 query +=  gbit.next();
-			 
-			 if(gbit.hasNext())
-					query +=  ", ";
-		}
-		
-		// ##############################################################
-		// HAVING Statement
-		// ##############################################################
-		ComparableStatement having = model.getHavingStatement();
-		if(having != null){
-			query += " HAVING " + having.getColumn() + " " + 
-					comparatorToString(having.getComparator()) + " ";
-			
-			// TODO: Escape String
-			if(having.getValueDataType() == dataType.STRING)
-				query += "'" + having.getValue() + "'";
-			else
-				query +=  having.getValue();
-		}
 
-		/*
-		if(column_names == null || column_names.length == 0)
-			throw new Exception("Invalid column names for Group By Statement. Values cannot be empty");
-		*/
-		
-		// ##############################################################
-		// ORDER BY Statement
-		// ##############################################################
-		Iterator<Entry<String, Order>> osit = model.getOrderByStatement().entrySet().iterator();
+		// Process Next
+		QueryElement next = model.getNextElement();
+
+		if(next instanceof OrderByClause)
+			return query + processOrderBy((OrderByClause) next);
+		if(next instanceof GroupByClause)
+			return query + processGroupBy((GroupByClause) next);
+		if(next instanceof HavingClause)
+			return query + processHaving((HavingClause) next);
+		if(model.getNextElement() != null)
+			throw new Exception("ERROR: Unknown state after Where");
+
+		return query + ";";
+	}
+	
+	// ##############################################################
+	// ORDER BY Statement
+	// ##############################################################
+	private String processOrderBy(OrderByClause model) throws Exception{
+		String query = "";
+		Iterator<Entry<String, Order>> osit = model.getOrderBy().entrySet().iterator();
 		if(osit.hasNext())
 			query += " ORDER BY ";
 		
@@ -153,6 +178,66 @@ public class MySQLDriver implements ModelDriver{
 				query +=  ", ";
 		}
 		
+		if(model.getNextElement() != null)
+			throw new Exception("ERROR: ORDER BY should be final state");
+		
+		return query + ";";
+	}
+	
+	// ##############################################################
+	// GROUP BY Statement
+	// ##############################################################
+	private String processGroupBy(GroupByClause model) throws Exception{
+		String query = "";
+		Iterator<String> gbit = model.getGroupBy().iterator();
+		if(gbit.hasNext())
+			query += " GROUP BY ";
+		
+		while(gbit.hasNext()){
+			 query +=  gbit.next();
+			 
+			 if(gbit.hasNext())
+					query +=  ", ";
+		}
+		
+		// Process Next
+		QueryElement next = model.getNextElement();
+
+		if(next instanceof OrderByClause)
+			return query + processOrderBy((OrderByClause) next);
+		if(next instanceof HavingClause)
+			return query + processHaving((HavingClause) next);
+		if(model.getNextElement() != null)
+			throw new Exception("ERROR: Unknown state after GroupBy");
+
+		return query + ";";
+	}
+	
+	// ##############################################################
+	// HAVING Statement
+	// ##############################################################
+	private String processHaving(HavingClause model) throws Exception{
+		String query = "";
+		ComparableStatement having = model.getFilter();
+		if(having != null){
+			query += " HAVING " + having.getColumn() + " " + 
+					comparatorToString(having.getComparator()) + " ";
+			
+			// TODO: Escape String
+			if(having.getValueDataType() == dataType.STRING)
+				query += "'" + having.getValue() + "'";
+			else
+				query +=  having.getValue();
+		}
+
+		// Process Next
+		QueryElement next = model.getNextElement();
+
+		if(next instanceof OrderByClause)
+			return query + processOrderBy((OrderByClause) next);
+		if(model.getNextElement() != null)
+			throw new Exception("ERROR: Unknown state after Having");
+
 		return query + ";";
 	}
 	

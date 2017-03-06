@@ -16,6 +16,9 @@ public class Application {
 				SELECT("name", "password").FROM("table").WHERE("name", EQUALS, "koszewski").AND("password", EQUALS, 1234).OR("password", EQUALS, 0000));
 		
 		System.out.println(
+				SELECT().FROM("a").WHERE("id", NOTEQUALS, 2));
+		
+		System.out.println(
 				SELECT().FROM("table").WHERE("age", GREATERTHAN, 5));
 		
 		System.out.println(
@@ -27,10 +30,6 @@ public class Application {
 		// Removes Duplicate Values (See OrderBy and GroupBy)
 		System.out.println(
 				SELECT("name", "password").FROM("table").WHERE("enabled", EQUALS, true).GROUPBY("group", "subgroup", "group").ORDERBY("name", ASC).ORDERBY("name", DESC));
-		
-		
-		System.out.println(
-				SELECT().FROM("a").WHERE("id", NOTEQUALS, 2));
 
 	}
 

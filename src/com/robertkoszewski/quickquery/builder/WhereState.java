@@ -1,6 +1,11 @@
 package com.robertkoszewski.quickquery.builder;
 
-import com.robertkoszewski.quickquery.model.*;
+import com.robertkoszewski.quickquery.model.ComparableStatement;
+import com.robertkoszewski.quickquery.model.ComparableStatementCollection;
+import com.robertkoszewski.quickquery.model.Compare;
+import com.robertkoszewski.quickquery.model.Order;
+import com.robertkoszewski.quickquery.model.QueryElement;
+import com.robertkoszewski.quickquery.model.WhereClause;
 import com.robertkoszewski.quickquery.statement.GroupBy;
 import com.robertkoszewski.quickquery.statement.Having;
 import com.robertkoszewski.quickquery.statement.OrderBy;
@@ -14,23 +19,39 @@ public class WhereState extends BuilderHost implements WhereAndOr, GroupBy, Havi
 	
 	private ComparableStatementCollection collection;
 	
-	WhereState(SQLBuilder builder, ComparableStatementCollection collection) {
-		super(builder);
+	WhereState(BuilderContainer builder, QueryElement model, ComparableStatementCollection collection) {
+		super(builder, model);
 		this.collection = collection;
 	}
 	
-	static WhereState whereFactory(SQLBuilder builder, ComparableStatementCollection collection, String column, Compare compare, Object value){
-		if(collection == null){
-			collection = new ComparableStatementCollection();
-			builder.getModel().addWhereStatement(collection);
+	static WhereState whereFactory(BuilderContainer builder, QueryElement model, ComparableStatementCollection collection, String column, Compare compare, Object value){
+		WhereClause where;
+		if(model instanceof WhereClause){
+			
+			where = (WhereClause) model;
+			if(collection == null){
+				collection = new ComparableStatementCollection();
+				where.addFilter(collection);
+			}
+			collection.addWhereStatement(new ComparableStatement(column, compare, value));
+
+		}else{
+			where = new WhereClause();
+			if(collection == null){
+				collection = new ComparableStatementCollection();
+				where.addFilter(collection);
+			}
+			collection.addWhereStatement(new ComparableStatement(column, compare, value));
+			model.addNextElement(where);
+			
 		}
-		collection.addWhereStatement(new ComparableStatement(column, compare, value));
-		return new WhereState(builder, collection);
+		
+		return new WhereState(builder, where, collection);
 	}
 
 	// WHERE (AND)
 	public WhereState and(String column, Compare compare, Object value){
-		return WhereState.whereFactory(builder, collection, column, compare, value);
+		return WhereState.whereFactory(builder, model, collection, column, compare, value);
 	}
 	
 	public WhereState AND(String column, Compare compare, Object value){
@@ -39,7 +60,7 @@ public class WhereState extends BuilderHost implements WhereAndOr, GroupBy, Havi
 
 	// WHERE (OR)
 	public WhereState or(String column, Compare compare, Object value){
-		return WhereState.whereFactory(builder, null, column, compare, value);
+		return WhereState.whereFactory(builder, model, null, column, compare, value);
 	}
 	
 	public WhereState OR(String column, Compare compare, Object value){
@@ -48,7 +69,7 @@ public class WhereState extends BuilderHost implements WhereAndOr, GroupBy, Havi
 	
 	// ORDER BY
 	public OrderByState orderby(String column_name){
-		return OrderByState.orderByFactory(builder, column_name, null);
+		return OrderByState.orderByFactory(builder, model, column_name, null);
 	}
 	
 	public OrderByState ORDERBY(String column_name){
@@ -56,7 +77,7 @@ public class WhereState extends BuilderHost implements WhereAndOr, GroupBy, Havi
 	}
 	
 	public OrderByState orderby(String column_name, Order order){
-		return OrderByState.orderByFactory(builder, column_name, order);
+		return OrderByState.orderByFactory(builder, model, column_name, order);
 	}
 	
 	public OrderByState ORDERBY(String column_name, Order order){
@@ -65,7 +86,7 @@ public class WhereState extends BuilderHost implements WhereAndOr, GroupBy, Havi
 
 	// HAVING
 	public HavingState having(String column, Compare compare, Object value){
-		return HavingState.havingFactory(builder, column, compare, value);
+		return HavingState.havingFactory(builder, model, column, compare, value);
 	}
 	
 	public HavingState HAVING(String column, Compare compare, Object value){
@@ -74,7 +95,7 @@ public class WhereState extends BuilderHost implements WhereAndOr, GroupBy, Havi
 
 	// GROUP BY
 	public GroupByState groupby(String... column_names){
-		return GroupByState.groupByFactory(builder, column_names);
+		return GroupByState.groupByFactory(builder, model, column_names);
 	}
 	
 	public GroupByState GROUPBY(String... column_names){

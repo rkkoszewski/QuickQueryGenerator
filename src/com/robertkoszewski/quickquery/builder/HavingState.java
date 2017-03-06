@@ -1,6 +1,9 @@
 package com.robertkoszewski.quickquery.builder;
 
-import com.robertkoszewski.quickquery.model.*;
+import com.robertkoszewski.quickquery.model.Compare;
+import com.robertkoszewski.quickquery.model.HavingClause;
+import com.robertkoszewski.quickquery.model.Order;
+import com.robertkoszewski.quickquery.model.QueryElement;
 import com.robertkoszewski.quickquery.statement.Having;
 import com.robertkoszewski.quickquery.statement.OrderBy;
 
@@ -11,18 +14,19 @@ import com.robertkoszewski.quickquery.statement.OrderBy;
 // TODO: Having AND/OR
 public class HavingState extends BuilderHost implements Having, OrderBy{
 
-	HavingState(SQLBuilder builder) {
-		super(builder);
+	HavingState(BuilderContainer builder, QueryElement model) {
+		super(builder, model);
 	}
 	
-	static HavingState havingFactory(SQLBuilder builder, String column, Compare compare, Object value) {
-		builder.getModel().addHavingStatement(column, compare, value);
-		return new HavingState(builder);
+	static HavingState havingFactory(BuilderContainer builder, QueryElement model, String column, Compare compare, Object value) {
+		HavingClause having = new HavingClause(column, compare, value);
+		model.addNextElement(having);
+		return new HavingState(builder, having);
 	}
 
 	// ORDER BY
 	public OrderByState orderby(String column_name){
-		return OrderByState.orderByFactory(builder, column_name, null);
+		return OrderByState.orderByFactory(builder, model, column_name, null);
 	}
 	
 	public OrderByState ORDERBY(String column_name){
@@ -30,7 +34,7 @@ public class HavingState extends BuilderHost implements Having, OrderBy{
 	}
 	
 	public OrderByState orderby(String column_name, Order order){
-		return OrderByState.orderByFactory(builder, column_name, order);
+		return OrderByState.orderByFactory(builder, model, column_name, order);
 	}
 	
 	public OrderByState ORDERBY(String column_name, Order order){
@@ -39,7 +43,7 @@ public class HavingState extends BuilderHost implements Having, OrderBy{
 
 	// HAVING
 	public HavingState having(String column, Compare compare, Object value){
-		return HavingState.havingFactory(builder, column, compare, value);
+		return HavingState.havingFactory(builder, model, column, compare, value);
 	}
 	
 	public HavingState HAVING(String column, Compare compare, Object value){

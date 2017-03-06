@@ -1,11 +1,11 @@
-package com.robertkoszewski.quickquery.model2;
+package com.robertkoszewski.quickquery.model;
 
 /**
- * Query Element
+ * Query Model
  * @author Robert Koszewski
  *
  */
-public abstract class QueryElement {
+public abstract class QueryModel implements QueryElement{
 	
 	private QueryElement nextElement;
 	

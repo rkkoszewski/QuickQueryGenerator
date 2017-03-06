@@ -1,9 +1,14 @@
 package com.robertkoszewski.quickquery.translator;
 
-import com.robertkoszewski.quickquery.model.SQLModel;
+import com.robertkoszewski.quickquery.model.QueryElement;
 
+/**
+ * Model Driver Interface
+ * @author Robert Koszewski
+ *
+ */
 public interface ModelDriver {
 
-	String toString(SQLModel model);
+	String toString(QueryElement model);
 
 }

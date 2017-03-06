@@ -1,7 +1,7 @@
 package com.robertkoszewski.quickquery;
 
+import com.robertkoszewski.quickquery.builder.BuilderContainer;
 import com.robertkoszewski.quickquery.builder.SelectState;
-import com.robertkoszewski.quickquery.model.*;
 import com.robertkoszewski.quickquery.translator.ModelDriver;
 import com.robertkoszewski.quickquery.translator.MySQLDriver;
 
@@ -17,7 +17,7 @@ public class Query {
 		if(driver == null)
 			driver = new MySQLDriver();
 		
-		SQLBuilder builder = new SQLBuilder(driver);
+		BuilderContainer builder = new BuilderContainer(driver);
 
 		return new SelectState(builder, columns);
 	}
